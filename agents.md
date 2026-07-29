@@ -288,6 +288,15 @@ model StudySession {
 
 ---
 
+## Documentação do Projeto
+
+- [README](../README.md) — visão geral, setup e stack
+- [Arquitetura](../docs/ARCHITECTURE.md) — fluxo de dados e RAG
+- [Desenvolvimento](../docs/DEVELOPMENT.md) — guia de desenvolvimento
+- [Changelog](../CHANGELOG.md) — histórico de mudanças
+
+---
+
 ## 🔒 Segurança
 
 | Regra | Motivo |
