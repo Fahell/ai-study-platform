@@ -1,8 +1,69 @@
 # 🤖 Agents Configuration
 
-> Guia de configuração de agentes de IA para o repositório **fullstack-app**.
+> Guia de configuração de agentes de IA e acesso rápido ao ambiente do projeto **ai-study-platform**.
 
 Este documento descreve como usar agentes (Freebuff, GitHub Copilot, Gemini CLI, etc.) com este monorepo de forma produtiva e segura.
+
+---
+
+## 🚀 Ambiente e Acesso Rápido
+
+### Repositório
+
+| Item | Valor |
+|------|-------|
+| Nome | `ai-study-platform` |
+| Repositório | `https://github.com/Fahell/ai-study-platform` |
+| Branch padrão | `master` |
+| Git user.name | `Rafael Tavares` |
+| Git user.email | `rafaeltavares237@gmail.com` |
+
+### Comandos para começar
+
+```bash
+# Acessar o projeto
+cd ~/fullstack-app
+
+# Verificar o estado do Git
+git status
+
+# Verificar o gerenciador de pacotes
+pnpm --version   # projeto usa pnpm
+
+# Instalar dependências
+pnpm install
+
+# Rodar o ambiente de desenvolvimento
+pnpm dev
+```
+
+---
+
+## 🛠️ Configuração do Git
+
+```bash
+# Configuração local do repositório
+git config user.name "Rafael Tavares"
+git config user.email "rafaeltavares237@gmail.com"
+
+# Verificar configuração
+git config --list --local
+```
+
+## 🐙 GitHub CLI (gh)
+
+```bash
+# Verificar autenticação
+gh auth status
+
+# Criar novo repositório (comando único — só executar uma vez)
+gh repo create ai-study-platform --public --source=. --remote=origin --push
+
+# Abrir o repositório no navegador
+gh repo view --web
+```
+
+---
 
 ---
 
