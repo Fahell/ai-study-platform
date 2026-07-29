@@ -165,6 +165,129 @@ Mantenha o padrão de erro global do index.ts."
 
 ---
 
+## 🧠 Arquitetura de Dados e RAG
+
+> Princípio geral: **sempre que possível, priorizar soluções gratuitas, open-source ou com generoso free tier listadas em [free-for-dev](https://github.com/ripienaar/free-for-dev).**
+
+A plataforma é **agnóstica de matéria**: o usuário escolhe o que quer aprender, e o sistema ingere fontes confiáveis (vídeos e PDFs), fragmenta, gera embeddings e armazena em banco vetorial para consulta pelos LLMs. Isso reduz alucinações e permite que o LLM ensine com base em fontes verificáveis.
+
+### 1. Ingestão de Fontes
+
+#### YouTube (transcrições)
+
+| Opção | Custo | Quando usar |
+|-------|-------|-------------|
+| `youtube-transcript` (npm) | Grátis, sem API key | MVP/local — extrai legendas oficiais em Node.js |
+| YouTube Data API v3 | Free tier (10.000 unidades/dia) | Metadados + legendas manuais |
+| `yt-dlp` + Groq Whisper | `yt-dlp` é OSS; Groq tem free tier generoso | Fallback quando não há legendas oficiais |
+| `youtube-transcript-api` (Python) | Grátis | Scripts Python/protótipos locais |
+
+> ⚠️ Extração em massa a partir de servidores em nuvem pode gerar bloqueios de IP. Para produção, considere proxies residenciais ou serviços gerenciados.
+
+#### PDFs (fontes acadêmicas e abertas)
+
+| Opção | Custo | Quando usar |
+|-------|-------|-------------|
+| arXiv API | Grátis | Papers de STEM |
+| Unpaywall API | Grátis (100k req/dia) | Resolver PDFs open-access a partir de DOIs |
+| Semantic Scholar API | Grátis com API key | Metadados e links de PDFs abertos |
+| OpenAlex API | Grátis | Catálogo aberto de pesquisa |
+
+#### Parsing de PDFs
+
+- **LlamaParse:** free tier generoso, ótimo para PDFs acadêmicos com tabelas/fórmulas
+- **`pdf-parse` (npm):** fallback open-source para extração básica de texto
+
+### 2. Banco Vetorial
+
+A stack base escolhida é **PostgreSQL + pgvector** (via Prisma).
+
+- **Por quê:** integração nativa com os dados da aplicação, sem adicionar outro banco, ACID, escalável até dezenas de milhões de vetores
+- **Hospedagem gratuita:** Supabase ou Neon (ambos listados em free-for-dev e com suporte a pgvector)
+- Alternativas prod: Pinecone, Qdrant, Weaviate, Chroma, Milvus
+
+### 3. Chunking e Embeddings
+
+- **Chunking:** `RecursiveCharacterTextSplitter` ou similar
+  - Tamanho: 500–800 tokens
+  - Overlap: 100 tokens
+  - YouTube: chunking baseado em timestamps
+  - PDF: chunking por página/seção
+- **Embeddings:**
+  - **Cohere `embed-english-v3.0`:** excelente free tier
+  - **OpenAI `text-embedding-3-small`:** muito barato, vetores 1536D
+  - **Open-source:** `sentence-transformers`/`bge-large-en-v1.5` para ambientes locais/privados
+
+### 4. RAG, Citações e Metadados
+
+Cada chunk deve carregar metadados ricos:
+
+```json
+{
+  "sourceType": "YOUTUBE" | "PDF",
+  "title": "...",
+  "url": "...",
+  "authorOrChannel": "...",
+  "timestamp": "03:14",
+  "pageNumber": 12,
+  "publishDate": "2026-01-15"
+}
+```
+
+- **Retrieval:** busca por similaridade com pgvector (`<=>`) + filtros de metadados
+- **Reranking:** cross-encoder (Cohere Rerank/BGE-Reranker) para ordenar os top-k chunks
+- **Citação forçada:** prompt instrui o LLM a citar fontes no formato `[Título, Página X]` ou `[Vídeo, MM:SS]`
+
+### 5. Modelo de Dados (Prisma) — Rascunho
+
+```prisma
+model Source {
+  id        String    @id @default(cuid())
+  url       String    @unique
+  type      String    // "YOUTUBE" | "PDF"
+  title     String
+  userId    String?   // null = global/public
+  createdAt DateTime  @default(now())
+  chunks    SourceChunk[]
+}
+
+model SourceChunk {
+  id        String   @id @default(cuid())
+  sourceId  String
+  source    Source   @relation(fields: [sourceId], references: [id])
+  content   String
+  metadata  Json
+  embedding Unsupported("vector(1536)")
+  // Adicionar índice HNSW/IVFFlat no embedding
+}
+
+model StudySession {
+  id        String   @id @default(cuid())
+  userId    String
+  topic     String
+  history   Json     // Vercel AI SDK Message[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
+
+### 6. Roteiro de Implementação sugerido
+
+1. Criar schema Prisma com `Source`, `SourceChunk` e `StudySession`
+2. Implementar ingestão de YouTube via `youtube-transcript`
+3. Implementar ingestão de PDF via URL + `pdf-parse`/`LlamaParse`
+4. Implementar chunking e geração de embeddings
+5. Implementar busca vetorial e chat com RAG (Vercel AI SDK)
+6. Adicionar citações e links diretos (timestamp/página)
+
+### 7. ⚖️ Caveats Legais e Éticos
+
+- **YouTube TOS:** scraping em massa viola os termos. Legendas oficiais são mais seguras; uso comercial requer cautela.
+- **Copyright de PDFs:** vetores de uso pessoal geralmente são OK; distribuir o PDF ou exibir trechos longos pode violar direitos autorais.
+- **Privacidade:** deletar vetores de fontes privadas quando o usuário excluir a sessão/estudo.
+
+---
+
 ## 🔒 Segurança
 
 | Regra | Motivo |
