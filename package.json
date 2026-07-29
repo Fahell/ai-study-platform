@@ -10,7 +10,13 @@
     "typecheck": "turbo typecheck",
     "lint": "turbo lint",
     "test": "turbo test",
-    "clean": "rm -rf packages/*/dist packages/*/node_modules node_modules .turbo"
+    "clean": "rm -rf packages/*/dist packages/*/node_modules node_modules .turbo",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:generate": "pnpm --filter @fullstack/db db:generate",
+    "db:migrate": "pnpm --filter @fullstack/db db:migrate",
+    "db:push": "pnpm --filter @fullstack/db db:push",
+    "db:studio": "pnpm --filter @fullstack/db db:studio"
   },
   "engines": {
     "node": ">=18"
