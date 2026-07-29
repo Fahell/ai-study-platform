@@ -40,3 +40,7 @@ coverage/
 
 tmp/
 temp/
+
+# ── Project-specific ─────────────────────────────────────────────────────
+
+logicus-spec.md
